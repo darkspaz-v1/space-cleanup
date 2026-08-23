@@ -1,0 +1,10 @@
+{
+  "folders": [
+    "%USERPROFILE%\\Downloads",
+    "%USERPROFILE%\\Desktop",
+    "%USERPROFILE%\\Documents"
+  ],
+  "large_file_mb": 100,
+  "stale_days": 60,
+  "skip_dirs": ["_archive", "node_modules", "venv", ".git", "__pycache__"]
+}
