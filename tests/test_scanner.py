@@ -128,7 +128,6 @@ def test_keep_list_round_trip(tmp_path, monkeypatch):
     assert scanner.load_keep_list() == {"a": {"size": 1}}
 
 
-@pytest.mark.xfail(strict=True, reason="known bug: corrupt keep_list.json crashes startup (fixed in next commit)")
 def test_corrupt_keep_list_starts_empty(tmp_path, monkeypatch):
     path = tmp_path / "keep_list.json"
     monkeypatch.setattr(scanner, "KEEP_LIST_PATH", path)
