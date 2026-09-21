@@ -17,6 +17,7 @@ from scanner import (
     mark_kept,
     save_keep_list,
     scan,
+    total_size,
 )
 from PIL import ImageTk
 
@@ -242,7 +243,7 @@ class SpaceCleanupApp:
         self._update_status()
 
     def _update_status(self):
-        total = sum(c["size"] for c in self.candidates)
+        total = total_size(self.candidates)
         self.status_label.config(
             text=(
                 f"{len(self.candidates)} candidate file(s) - {human_size(total)} total  "

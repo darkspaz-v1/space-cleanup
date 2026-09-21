@@ -115,6 +115,11 @@ def scan(config, keep_list):
     return candidates
 
 
+def total_size(candidates):
+    """Sum of candidate sizes in bytes (what the status bar reports)."""
+    return sum(c["size"] for c in candidates)
+
+
 def human_size(n):
     n = float(n)
     for unit in ("B", "KB", "MB", "GB", "TB"):
