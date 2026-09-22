@@ -1,7 +1,10 @@
 import json
+import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 APP_DIR = Path(__file__).parent
 CONFIG_PATH = APP_DIR / "config.json"
@@ -35,12 +38,20 @@ def load_keep_list():
         with open(KEEP_LIST_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
+        return {}  # first run: nothing kept yet
+    except json.JSONDecodeError:
+        # A truncated file used to crash startup. Starting empty only means
+        # previously-kept files are proposed again - nothing is deleted.
+        log.warning("%s is not valid JSON; ignoring it", KEEP_LIST_PATH, exc_info=True)
         return {}
 
 
 def save_keep_list(keep_list):
-    with open(KEEP_LIST_PATH, "w", encoding="utf-8") as f:
+    # Temp file + os.replace so a crash mid-write can't leave a truncated keep list.
+    tmp = KEEP_LIST_PATH.with_name(KEEP_LIST_PATH.name + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(keep_list, f, indent=2)
+    os.replace(tmp, KEEP_LIST_PATH)
 
 
 def mark_kept(keep_list, path, size, mtime, atime):
@@ -113,6 +124,11 @@ def scan(config, keep_list):
 
     candidates.sort(key=lambda c: c["size"], reverse=True)
     return candidates
+
+
+def total_size(candidates):
+    """Sum of candidate sizes in bytes (what the status bar reports)."""
+    return sum(c["size"] for c in candidates)
 
 
 def human_size(n):

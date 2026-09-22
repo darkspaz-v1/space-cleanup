@@ -1,3 +1,4 @@
+import logging
 import msvcrt
 import queue
 import threading
@@ -9,6 +10,7 @@ from pathlib import Path
 from tkinter import messagebox, ttk
 
 from actions import archive_file, delete_file
+from applog import setup_logging
 from icon import app_icon
 from scanner import (
     human_size,
@@ -17,12 +19,14 @@ from scanner import (
     mark_kept,
     save_keep_list,
     scan,
+    total_size,
 )
 from PIL import ImageTk
 
 APP_DIR = Path(__file__).parent
 LOCK_PATH = APP_DIR / ".instance.lock"
 _lock_file = None
+log = logging.getLogger("space-cleanup")
 
 
 def _acquire_single_instance_lock():
@@ -37,6 +41,7 @@ def _acquire_single_instance_lock():
     try:
         msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
     except OSError:
+        # Expected when another instance holds the lock: report "already running".
         f.close()
         return False
     _lock_file = f
@@ -242,7 +247,7 @@ class SpaceCleanupApp:
         self._update_status()
 
     def _update_status(self):
-        total = sum(c["size"] for c in self.candidates)
+        total = total_size(self.candidates)
         self.status_label.config(
             text=(
                 f"{len(self.candidates)} candidate file(s) - {human_size(total)} total  "
@@ -281,7 +286,8 @@ class SpaceCleanupApp:
             try:
                 archive_file(c["path"], c["root"])
                 self._remove_row(c)
-            except Exception as e:
+            except Exception as e:  # broad on purpose: per-file failure is shown to the user; keep going with the rest
+                log.warning("archive failed for %s", c["path"], exc_info=True)
                 errors.append(f"{c['name']}: {e}")
         if errors:
             messagebox.showerror("Archive errors", "\n".join(errors))
@@ -302,7 +308,8 @@ class SpaceCleanupApp:
             try:
                 delete_file(c["path"])
                 self._remove_row(c)
-            except Exception as e:
+            except Exception as e:  # broad on purpose: per-file failure is shown to the user; keep going with the rest
+                log.warning("delete (recycle bin) failed for %s", c["path"], exc_info=True)
                 errors.append(f"{c['name']}: {e}")
         if errors:
             messagebox.showerror("Delete errors", "\n".join(errors))
@@ -330,6 +337,7 @@ class SpaceCleanupApp:
 
 
 def main():
+    setup_logging("space-cleanup")
     if not _acquire_single_instance_lock():
         print("Space Cleanup is already running in another window.")
         return
@@ -342,6 +350,8 @@ if __name__ == "__main__":
         main()
     except Exception:
         import traceback
+
+        log.exception("fatal error")
 
         with open(APP_DIR / "app_error.log", "a", encoding="utf-8") as f:
             f.write(f"\n--- {time.ctime()} ---\n")
