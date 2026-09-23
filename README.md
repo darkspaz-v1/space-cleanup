@@ -4,6 +4,8 @@
 
 On-demand review of what is eating disk space, with reversible actions only.
 
+![Space Cleanup preview](docs/images/space-cleanup-preview.png)
+
 ![Space Cleanup review list showing sample candidate files with Keep, Archive, and Delete → Recycle Bin actions](docs/media/screenshot.png)
 
 ## How it works
